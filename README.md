@@ -99,13 +99,13 @@ The demo Git repository include the following files and folders, your group coul
 ├── req/                                  
 │   └── business-requirement.md     
 ├── outputs/                        
-│   ├── 01-business-req-analysis-G<Group>.md  
-│   ├── 02-erd-design-G<Group>.md             
+│   ├── 01-business-req-analysis-G03.md  
+│   ├── 02-erd-design-G03.md             
 │   └── ... 
 ├── AGENT.md                        
 ├── README.md                       
 ├── .gitignore                      
-└── G<Group>_Report.pdf             
+└── G03_Report.pdf             
 ```
 
 ---
