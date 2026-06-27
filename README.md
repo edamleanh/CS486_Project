@@ -37,27 +37,19 @@ antigravity
 
 #### Step 2: Connect an LLM Provider
 
-Inside Antigravity, run:
-
-```text
-/connect
-```
-
-Then select the LLM provider that your group wants to use, such as OpenAI, Anthropic, Gemini, OpenRouter, Antigravity Zen, or another supported provider.
-
-When requested, enter the API key or login information for the selected provider.
+In the Antigravity VS Code Extension interface:
+1. Click on the **Settings** icon (gear icon) in the Antigravity chat panel.
+2. Select the LLM provider that your group wants to use (e.g., OpenAI, Anthropic, Gemini, OpenRouter, Antigravity Zen).
+3. Enter your API key or login information for the selected provider.
 
 > Do not commit API keys, access tokens, or private credentials to Git.
 
 #### Step 3: Select an LLM Model
 
-After connecting the provider, run:
-
-```text
-/models
-```
-
-Choose the model that your group wants to use for the project.
+After connecting the provider:
+1. Look at the top of the Antigravity chat panel.
+2. Click on the **model name dropdown menu**.
+3. Choose the specific model that your group wants to use for the project.
 
 ## 2. Project Goal
 
