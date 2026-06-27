@@ -1,115 +1,101 @@
--- 05 - Database Definition (DDL) for Space Management System
+-- ======================================================================
+-- DATABASE DEFINITION (DDL) SCRIPT - GROUP 03
+-- ======================================================================
 
--- =======================================================
--- DROP EXISTING TABLES (Reverse Dependency Order)
--- =======================================================
-DROP TABLE IF EXISTS MAINTENANCE_RECORD;
-DROP TABLE IF EXISTS BOOKING_REQUEST;
-DROP TABLE IF EXISTS FACILITY;
-DROP TABLE IF EXISTS SPACE;
-DROP TABLE IF EXISTS [USER]; -- USER is a reserved keyword in SQL Server
+-- 1. DROP EXISTING TABLES FOR IDEMPOTENCY
+IF OBJECT_ID('Maintenance_Records', 'U') IS NOT NULL DROP TABLE Maintenance_Records;
+IF OBJECT_ID('Space_Facilities', 'U') IS NOT NULL DROP TABLE Space_Facilities;
+IF OBJECT_ID('Bookings', 'U') IS NOT NULL DROP TABLE Bookings;
+IF OBJECT_ID('Facilities', 'U') IS NOT NULL DROP TABLE Facilities;
+IF OBJECT_ID('Spaces', 'U') IS NOT NULL DROP TABLE Spaces;
+IF OBJECT_ID('Users', 'U') IS NOT NULL DROP TABLE Users;
 
--- =======================================================
--- TABLE CREATION
--- =======================================================
+-- 2. CREATE TABLES
 
--- 1. Create USER table
-CREATE TABLE [USER] (
+CREATE TABLE Users (
     UserID VARCHAR(20) PRIMARY KEY,
     FullName NVARCHAR(100) NOT NULL,
-    Email VARCHAR(100) NOT NULL UNIQUE,
-    PhoneNumber VARCHAR(20) NULL,
-    Role VARCHAR(50) NOT NULL,
-    Department NVARCHAR(100) NULL,
-    AccountStatus VARCHAR(20) NOT NULL
+    Email VARCHAR(100) UNIQUE NOT NULL,
+    Phone VARCHAR(15),
+    Role VARCHAR(50) NOT NULL, 
+    Department NVARCHAR(100),
+    AccountStatus VARCHAR(20) NOT NULL DEFAULT 'Active'
 );
 
--- 2. Create SPACE table
-CREATE TABLE SPACE (
+CREATE TABLE Spaces (
     SpaceCode VARCHAR(20) PRIMARY KEY,
     SpaceName NVARCHAR(100) NOT NULL,
     SpaceType VARCHAR(50) NOT NULL,
-    Building NVARCHAR(50) NOT NULL,
-    FloorLevel INT NOT NULL,
+    Building VARCHAR(50) NOT NULL,
+    Floor INT,
     RoomNumber VARCHAR(20) NOT NULL,
-    Capacity INT NOT NULL,
-    CurrentStatus VARCHAR(20) NOT NULL,
-    UsagePolicy NVARCHAR(MAX) NULL
+    Capacity INT NOT NULL CHECK (Capacity > 0),
+    CurrentStatus VARCHAR(20) NOT NULL DEFAULT 'Available',
+    UsagePolicy NVARCHAR(500)
 );
 
--- 3. Create FACILITY table
-CREATE TABLE FACILITY (
+CREATE TABLE Facilities (
     FacilityID INT IDENTITY(1,1) PRIMARY KEY,
-    SpaceCode VARCHAR(20) NOT NULL,
     FacilityName NVARCHAR(100) NOT NULL,
-    FacilityType VARCHAR(50) NOT NULL,
-    Condition VARCHAR(20) NOT NULL,
-    
-    CONSTRAINT FK_Facility_Space FOREIGN KEY (SpaceCode) REFERENCES SPACE(SpaceCode)
-        ON DELETE CASCADE ON UPDATE CASCADE
+    Description NVARCHAR(255)
 );
 
--- 4. Create BOOKING_REQUEST table
-CREATE TABLE BOOKING_REQUEST (
+CREATE TABLE Space_Facilities (
+    SpaceCode VARCHAR(20) NOT NULL,
+    FacilityID INT NOT NULL,
+    Quantity INT NOT NULL DEFAULT 1 CHECK (Quantity > 0),
+    PRIMARY KEY (SpaceCode, FacilityID),
+    FOREIGN KEY (SpaceCode) REFERENCES Spaces(SpaceCode) ON DELETE CASCADE,
+    FOREIGN KEY (FacilityID) REFERENCES Facilities(FacilityID) ON DELETE CASCADE
+);
+
+CREATE TABLE Bookings (
     BookingID INT IDENTITY(1,1) PRIMARY KEY,
+    SpaceCode VARCHAR(20) NOT NULL,
     RequesterID VARCHAR(20) NOT NULL,
     ApproverID VARCHAR(20) NULL,
-    SpaceCode VARCHAR(20) NOT NULL,
     ReqStartTime DATETIME NOT NULL,
     ReqEndTime DATETIME NOT NULL,
     Purpose NVARCHAR(255) NOT NULL,
-    NumParticipants INT NOT NULL,
-    Status VARCHAR(20) NOT NULL,
+    Participants INT NOT NULL CHECK (Participants > 0),
+    Status VARCHAR(20) NOT NULL DEFAULT 'Pending',
     DecisionTime DATETIME NULL,
-    DecisionNote NVARCHAR(255) NULL,
     RejReason NVARCHAR(255) NULL,
     CheckInStaffID VARCHAR(20) NULL,
     ActualStartTime DATETIME NULL,
+    InitialCondition NVARCHAR(255) NULL,
+    CheckOutStaffID VARCHAR(20) NULL,
     ActualEndTime DATETIME NULL,
-    InitialCond NVARCHAR(255) NULL,
-    FinalCond NVARCHAR(255) NULL,
-    UsageNotes NVARCHAR(255) NULL,
-
-    CONSTRAINT FK_Booking_Requester FOREIGN KEY (RequesterID) REFERENCES [USER](UserID)
-        ON DELETE NO ACTION ON UPDATE CASCADE,
-    CONSTRAINT FK_Booking_Approver FOREIGN KEY (ApproverID) REFERENCES [USER](UserID)
-        ON DELETE NO ACTION ON UPDATE NO ACTION,
-    CONSTRAINT FK_Booking_Space FOREIGN KEY (SpaceCode) REFERENCES SPACE(SpaceCode)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT FK_Booking_CheckInStaff FOREIGN KEY (CheckInStaffID) REFERENCES [USER](UserID)
-        ON DELETE NO ACTION ON UPDATE NO ACTION
+    FinalCondition NVARCHAR(255) NULL,
+    UsageNotes NVARCHAR(500) NULL,
+    
+    FOREIGN KEY (SpaceCode) REFERENCES Spaces(SpaceCode),
+    FOREIGN KEY (RequesterID) REFERENCES Users(UserID),
+    FOREIGN KEY (ApproverID) REFERENCES Users(UserID),
+    FOREIGN KEY (CheckInStaffID) REFERENCES Users(UserID),
+    FOREIGN KEY (CheckOutStaffID) REFERENCES Users(UserID),
+    CONSTRAINT CHK_ReqTime CHECK (ReqEndTime > ReqStartTime),
+    CONSTRAINT CHK_ActualTime CHECK (ActualEndTime >= ActualStartTime OR ActualEndTime IS NULL)
 );
 
--- 5. Create MAINTENANCE_RECORD table
-CREATE TABLE MAINTENANCE_RECORD (
+CREATE TABLE Maintenance_Records (
     MaintenanceID INT IDENTITY(1,1) PRIMARY KEY,
     SpaceCode VARCHAR(20) NOT NULL,
     ReporterID VARCHAR(20) NOT NULL,
-    HandlerID VARCHAR(20) NULL,
-    ProblemDesc NVARCHAR(MAX) NOT NULL,
+    AssignedStaffID VARCHAR(20) NULL,
+    ProblemDesc NVARCHAR(500) NOT NULL,
     StartTime DATETIME NOT NULL,
     CompletionTime DATETIME NULL,
-    Status VARCHAR(20) NOT NULL,
-    ResultNote NVARCHAR(MAX) NULL,
-
-    CONSTRAINT FK_Maintenance_Space FOREIGN KEY (SpaceCode) REFERENCES SPACE(SpaceCode)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT FK_Maintenance_Reporter FOREIGN KEY (ReporterID) REFERENCES [USER](UserID)
-        ON DELETE NO ACTION ON UPDATE CASCADE,
-    CONSTRAINT FK_Maintenance_Handler FOREIGN KEY (HandlerID) REFERENCES [USER](UserID)
-        ON DELETE NO ACTION ON UPDATE NO ACTION
+    Status VARCHAR(20) NOT NULL DEFAULT 'Reported',
+    ResultNote NVARCHAR(500) NULL,
+    
+    FOREIGN KEY (SpaceCode) REFERENCES Spaces(SpaceCode),
+    FOREIGN KEY (ReporterID) REFERENCES Users(UserID),
+    FOREIGN KEY (AssignedStaffID) REFERENCES Users(UserID)
 );
 
--- =======================================================
--- INDEX CREATION (Performance Optimization)
--- =======================================================
-
--- Indexes on Time and Status for fast booking lookups
-CREATE NONCLUSTERED INDEX IX_BookingReq_Times ON BOOKING_REQUEST (ReqStartTime, ReqEndTime);
-CREATE NONCLUSTERED INDEX IX_BookingReq_Status ON BOOKING_REQUEST (Status);
-
--- Indexes on Foreign Keys to speed up JOIN operations
-CREATE NONCLUSTERED INDEX IX_BookingReq_SpaceCode ON BOOKING_REQUEST (SpaceCode);
-CREATE NONCLUSTERED INDEX IX_BookingReq_Requester ON BOOKING_REQUEST (RequesterID);
-CREATE NONCLUSTERED INDEX IX_Facility_SpaceCode ON FACILITY (SpaceCode);
-CREATE NONCLUSTERED INDEX IX_Maintenance_SpaceCode ON MAINTENANCE_RECORD (SpaceCode);
+-- 3. CREATE INDEXES
+CREATE INDEX Idx_Bookings_Space_Time ON Bookings(SpaceCode, ReqStartTime, ReqEndTime);
+CREATE INDEX Idx_Bookings_Status ON Bookings(Status);
+CREATE INDEX Idx_Bookings_Requester ON Bookings(RequesterID);
+CREATE INDEX Idx_Maintenance_Status ON Maintenance_Records(Status);

@@ -1,141 +1,110 @@
--- 07 - Query Design (DQL) for Space Management System
-
-/*
-Yêu cầu đề bài: Thiết kế ít nhất 5 truy vấn SQL có ý nghĩa đối với bài toán.
-Mỗi truy vấn cần đi kèm:
-- Câu hỏi nghiệp vụ (Business question)
-- Người dùng mục tiêu (Target user)
-- Giải thích tính hữu ích (Explanation)
-- Lệnh SQL
-*/
-
 -- ======================================================================
--- QUERY 1: Tìm các yêu cầu đặt phòng đang chờ duyệt
+-- QUERY DESIGN (DQL) SCRIPT - GROUP 03
 -- ======================================================================
+
+-- 1. VIEW ALL PENDING BOOKING REQUESTS
 /*
-- Business question: Hiện tại có những yêu cầu đặt phòng nào đang chờ duyệt (Pending), ai là người yêu cầu và muốn đặt phòng nào?
-- Target user(s): Facility Manager (Quản lý cơ sở vật chất)
-- Explanation: Giúp người quản lý nhanh chóng lọc ra danh sách các yêu cầu đang đợi để tiến hành thao tác duyệt (Approve) hoặc từ chối (Reject).
+Business question: What are the current pending booking requests that need approval?
+Explanation: Used by Facility Staff/Managers to review requests that have not yet been approved or rejected.
 */
 SELECT 
-    BR.BookingID,
+    B.BookingID,
+    S.SpaceName,
     U.FullName AS RequesterName,
     U.Role AS RequesterRole,
-    S.SpaceName,
-    BR.ReqStartTime,
-    BR.ReqEndTime,
-    BR.Purpose
+    B.ReqStartTime,
+    B.ReqEndTime,
+    B.Purpose,
+    B.Participants
 FROM 
-    BOOKING_REQUEST BR
+    Bookings B
 JOIN 
-    [USER] U ON BR.RequesterID = U.UserID
+    Spaces S ON B.SpaceCode = S.SpaceCode
 JOIN 
-    SPACE S ON BR.SpaceCode = S.SpaceCode
+    Users U ON B.RequesterID = U.UserID
 WHERE 
-    BR.Status = 'Pending'
+    B.Status = 'Pending'
 ORDER BY 
-    BR.ReqStartTime ASC;
+    B.ReqStartTime ASC;
 
-
--- ======================================================================
--- QUERY 2: Xem danh sách các phòng đang gặp sự cố thiết bị
--- ======================================================================
+-- 2. CHECK SPACE AVAILABILITY FOR A SPECIFIC TIME
 /*
-- Business question: Có những không gian nào đang chứa thiết bị bị hỏng (Broken) và đó là thiết bị gì?
-- Target user(s): Facility Staff (Nhân viên cơ sở vật chất)
-- Explanation: Giúp nhân viên bảo trì có cái nhìn tổng quan về các thiết bị hư hỏng ở các phòng để lên lịch trình đi sửa chữa và thay thế thiết bị.
+Business question: Which spaces are available for booking on '2026-10-25' between '08:00:00' and '12:00:00' with a capacity of at least 30?
+Explanation: Helps users find available spaces by filtering out spaces that are closed/under maintenance or have overlapping approved bookings.
 */
 SELECT 
-    S.SpaceCode,
-    S.SpaceName,
-    F.FacilityName,
-    F.FacilityType,
-    F.Condition
+    S.SpaceCode, 
+    S.SpaceName, 
+    S.Capacity
 FROM 
-    SPACE S
-JOIN 
-    FACILITY F ON S.SpaceCode = F.SpaceCode
+    Spaces S
 WHERE 
-    F.Condition = 'Broken'
-ORDER BY 
-    S.SpaceCode;
+    S.CurrentStatus = 'Available'
+    AND S.Capacity >= 30
+    AND S.SpaceCode NOT IN (
+        SELECT SpaceCode 
+        FROM Bookings 
+        WHERE Status IN ('Approved', 'Checked In')
+          AND (ReqStartTime < '2026-10-25 12:00:00' AND ReqEndTime > '2026-10-25 08:00:00')
+    );
 
-
--- ======================================================================
--- QUERY 3: Theo dõi trạng thái bảo trì chưa hoàn tất
--- ======================================================================
+-- 3. LIST ALL FACILITIES IN A SPECIFIC SPACE
 /*
-- Business question: Những sự cố phòng nào đã được báo cáo nhưng chưa được sửa chữa xong (Reported hoặc In Progress)? Ai là người xử lý?
-- Target user(s): Facility Manager / Facility Staff
-- Explanation: Theo dõi tiến độ bảo trì của hệ thống, giúp người quản lý đôn đốc công việc hoặc phân công người xử lý nếu cột HandlerID vẫn đang trống.
+Business question: What equipment/facilities are available in 'Auditorium A1' (SpaceCode 'A1-101')?
+Explanation: Allows requesters to see what equipment exists in a room before booking.
 */
 SELECT 
-    MR.MaintenanceID,
+    F.FacilityName, 
+    SF.Quantity, 
+    F.Description
+FROM 
+    Space_Facilities SF
+JOIN 
+    Facilities F ON SF.FacilityID = F.FacilityID
+WHERE 
+    SF.SpaceCode = 'A1-101';
+
+-- 4. VIEW ACTIVE MAINTENANCE ISSUES
+/*
+Business question: Which spaces are currently facing maintenance issues that are not yet completed?
+Explanation: Facility managers use this to track outstanding repairs and coordinate maintenance staff.
+*/
+SELECT 
+    M.MaintenanceID,
     S.SpaceName,
     U.FullName AS ReporterName,
-    H.FullName AS HandlerName,
-    MR.ProblemDesc,
-    MR.StartTime,
-    MR.Status
+    M.ProblemDesc,
+    M.StartTime,
+    M.Status
 FROM 
-    MAINTENANCE_RECORD MR
+    Maintenance_Records M
 JOIN 
-    SPACE S ON MR.SpaceCode = S.SpaceCode
+    Spaces S ON M.SpaceCode = S.SpaceCode
 JOIN 
-    [USER] U ON MR.ReporterID = U.UserID
-LEFT JOIN 
-    [USER] H ON MR.HandlerID = H.UserID
+    Users U ON M.ReporterID = U.UserID
 WHERE 
-    MR.Status IN ('Reported', 'In Progress')
+    M.Status != 'Completed'
 ORDER BY 
-    MR.StartTime DESC;
+    M.StartTime DESC;
 
-
--- ======================================================================
--- QUERY 4: Thống kê tần suất sử dụng của các phòng (Utilization)
--- ======================================================================
+-- 5. USER BOOKING HISTORY
 /*
-- Business question: Mỗi phòng đã được sử dụng (Completed) hoặc được đặt trước (Approved) bao nhiêu lần? Sắp xếp từ nhiều nhất đến ít nhất.
-- Target user(s): Department Administrator / Facility Manager
-- Explanation: Giúp ban quản lý đánh giá được phòng nào được sử dụng nhiều nhất (quá tải) và phòng nào ít được sử dụng, từ đó có cơ sở để điều chỉnh không gian hoặc chuyển đổi mục đích sử dụng.
+Business question: What is the booking history of student 'SV001'?
+Explanation: Allows an individual user to check the statuses of all their past and upcoming booking requests.
 */
 SELECT 
-    S.SpaceCode,
+    B.BookingID,
     S.SpaceName,
-    COUNT(BR.BookingID) AS TotalBookings
+    B.ReqStartTime,
+    B.ReqEndTime,
+    B.Status,
+    B.RejReason,
+    B.DecisionTime
 FROM 
-    SPACE S
-LEFT JOIN 
-    BOOKING_REQUEST BR ON S.SpaceCode = BR.SpaceCode 
-                       AND BR.Status IN ('Approved', 'Completed')
-GROUP BY 
-    S.SpaceCode, 
-    S.SpaceName
-ORDER BY 
-    TotalBookings DESC;
-
-
--- ======================================================================
--- QUERY 5: Lịch sử đặt phòng của một cá nhân cụ thể
--- ======================================================================
-/*
-- Business question: Lịch sử đặt phòng của người dùng có mã 'SV001' là gì? Các yêu cầu đã được xử lý ra sao?
-- Target user(s): Student / Lecturer (Người dùng cuối)
-- Explanation: Cho phép người dùng theo dõi và xem lại toàn bộ các phiên đặt phòng của chính mình, biết được phòng nào bị từ chối và phòng nào đã được duyệt.
-*/
-SELECT 
-    BR.BookingID,
-    S.SpaceName,
-    BR.ReqStartTime,
-    BR.ReqEndTime,
-    BR.Status,
-    BR.RejReason,
-    BR.DecisionTime
-FROM 
-    BOOKING_REQUEST BR
+    Bookings B
 JOIN 
-    SPACE S ON BR.SpaceCode = S.SpaceCode
+    Spaces S ON B.SpaceCode = S.SpaceCode
 WHERE 
-    BR.RequesterID = 'SV001'
+    B.RequesterID = 'SV001'
 ORDER BY 
-    BR.ReqStartTime DESC;
+    B.ReqStartTime DESC;

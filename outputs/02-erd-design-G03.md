@@ -1,92 +1,101 @@
-# 02 - Conceptual Database Design (ERD)
+# Conceptual Design / ERD
 
-## 1. Entities and Attributes (Thực thể và Thuộc tính)
-Dựa trên phân tích nghiệp vụ, dưới đây là các thực thể và thuộc tính của hệ thống. Khóa chính (Primary Key - PK) được gạch dưới hoặc đánh dấu rõ ràng nhằm phân biệt từng thực thể:
+## Entities & Attributes
+- **USER**: UserID (PK), FullName, Email, Phone, Role, Department, AccountStatus
+- **SPACE**: SpaceCode (PK), SpaceName, SpaceType, Building, Floor, RoomNumber, Capacity, CurrentStatus, UsagePolicy
+- **FACILITY**: FacilityID (PK), FacilityName, Description
+- **BOOKING**: BookingID (PK), SpaceCode (FK), RequesterID (FK), ApproverID (FK), CheckInStaffID (FK), CheckOutStaffID (FK), ReqStartTime, ReqEndTime, Purpose, Participants, Status, RejReason, DecisionTime, ActualStartTime, InitialCondition, ActualEndTime, FinalCondition, UsageNotes
+- **MAINTENANCE**: MaintenanceID (PK), SpaceCode (FK), ReporterID (FK), AssignedStaffID (FK), ProblemDesc, StartTime, CompletionTime, Status, ResultNote
 
-*   **USER** (Người dùng)
-    *   **<u>UserID</u>** (PK)
-    *   FullName
-    *   Email
-    *   PhoneNumber
-    *   Role (Student, Lecturer, TA, Facility Staff, Dept Admin, Facility Manager)
-    *   Department
-    *   AccountStatus (Active, Suspended...)
+## Relationships & Cardinality
+- A USER can make multiple BOOKINGs (1:N)
+- A SPACE can have multiple BOOKINGs (1:N)
+- A USER (Staff) can approve/check-in/check-out multiple BOOKINGs (1:N)
+- A SPACE has a many-to-many relationship with FACILITY (N:M), resolved by SPACE_FACILITY
+- A SPACE can have multiple MAINTENANCE records (1:N)
+- A USER can report or be assigned to multiple MAINTENANCE records (1:N)
 
-*   **SPACE** (Không gian/Phòng)
-    *   **<u>SpaceCode</u>** (PK)
-    *   SpaceName
-    *   SpaceType (Classroom, Lab, Meeting room, Auditorium)
-    *   Building
-    *   Floor
-    *   RoomNumber
-    *   Capacity
-    *   CurrentStatus (Available, In Use, Maintenance, Closed)
-    *   UsagePolicy
+## ERD Diagram
 
-*   **FACILITY** (Thiết bị/Tiện ích trong phòng)
-    *   **<u>FacilityID</u>** (PK)
-    *   FacilityName
-    *   FacilityType (Projector, AC, Whiteboard, PC...)
-    *   Condition (Good, Broken)
+```mermaid
+erDiagram
+    USER ||--o{ BOOKING : requests
+    USER ||--o{ BOOKING : approves
+    USER ||--o{ BOOKING : checks_in
+    USER ||--o{ BOOKING : checks_out
+    USER ||--o{ MAINTENANCE : reports
+    USER ||--o{ MAINTENANCE : assigned_to
 
-*   **BOOKING_REQUEST** (Yêu cầu đặt phòng)
-    *   **<u>BookingID</u>** (PK)
-    *   ReqStartTime
-    *   ReqEndTime
-    *   Purpose
-    *   NumParticipants
-    *   Status (Pending, Approved, Rejected, Cancelled, No-show, Completed)
-    *   DecisionTime (thời gian duyệt/từ chối)
-    *   DecisionNote
-    *   RejReason
-    *   ActualStartTime (thời gian check-in thực tế)
-    *   ActualEndTime (thời gian check-out thực tế)
-    *   InitialCond (Tình trạng phòng lúc nhận)
-    *   FinalCond (Tình trạng phòng lúc trả)
-    *   UsageNotes
+    SPACE ||--o{ BOOKING : hosts
+    SPACE ||--o{ MAINTENANCE : undergoes
+    SPACE ||--o{ SPACE_FACILITY : contains
 
-*   **MAINTENANCE_RECORD** (Hồ sơ bảo trì)
-    *   **<u>MaintenanceID</u>** (PK)
-    *   ProblemDesc
-    *   StartTime
-    *   CompletionTime
-    *   Status (Reported, In Progress, Resolved)
-    *   ResultNote
+    FACILITY ||--o{ SPACE_FACILITY : placed_in
 
-## 2. Relationships and Cardinalities (Mối quan hệ và Bản số tham gia)
-Sử dụng ký hiệu `(min, max)` để biểu diễn số lượng tối thiểu và tối đa các thực thể tham gia vào một mối quan hệ:
+    USER {
+        string UserID PK
+        string FullName
+        string Email
+        string Phone
+        string Role
+        string Department
+        string AccountStatus
+    }
 
-1.  **USER - BOOKING_REQUEST (Submits / Gửi yêu cầu)**
-    *   Một `USER` có thể gửi 0 hoặc nhiều `BOOKING_REQUEST` $\rightarrow$ `(0, n)`.
-    *   Một `BOOKING_REQUEST` bắt buộc do đúng 1 `USER` gửi $\rightarrow$ `(1, 1)`.
+    SPACE {
+        string SpaceCode PK
+        string SpaceName
+        string SpaceType
+        string Building
+        int Floor
+        string RoomNumber
+        int Capacity
+        string CurrentStatus
+        string UsagePolicy
+    }
 
-2.  **USER - BOOKING_REQUEST (Decides / Phê duyệt)**
-    *   Một `USER` (quản lý) có thể duyệt 0 hoặc nhiều `BOOKING_REQUEST` $\rightarrow$ `(0, n)`.
-    *   Một `BOOKING_REQUEST` được duyệt bởi tối đa 1 `USER` (có thể chưa ai duyệt lúc chờ) $\rightarrow$ `(0, 1)`.
+    FACILITY {
+        int FacilityID PK
+        string FacilityName
+        string Description
+    }
 
-3.  **USER - BOOKING_REQUEST (Checks-in/out / Làm thủ tục)**
-    *   Một `USER` (nhân viên) có thể làm thủ tục check-in/out cho 0 hoặc nhiều `BOOKING_REQUEST` $\rightarrow$ `(0, n)`.
-    *   Một phiên sử dụng (`BOOKING_REQUEST`) được làm thủ tục bởi tối đa 1 `USER` $\rightarrow$ `(0, 1)`.
+    SPACE_FACILITY {
+        string SpaceCode PK, FK
+        int FacilityID PK, FK
+        int Quantity
+    }
 
-4.  **SPACE - BOOKING_REQUEST (Has / Có lượt đặt)**
-    *   Một `SPACE` có thể có 0 hoặc nhiều `BOOKING_REQUEST` $\rightarrow$ `(0, n)`.
-    *   Một `BOOKING_REQUEST` chỉ đặt đúng 1 `SPACE` $\rightarrow$ `(1, 1)`.
+    BOOKING {
+        int BookingID PK
+        string SpaceCode FK
+        string RequesterID FK
+        string ApproverID FK
+        datetime ReqStartTime
+        datetime ReqEndTime
+        string Purpose
+        int Participants
+        string Status
+        datetime DecisionTime
+        string RejReason
+        string CheckInStaffID FK
+        datetime ActualStartTime
+        string InitialCondition
+        string CheckOutStaffID FK
+        datetime ActualEndTime
+        string FinalCondition
+        string UsageNotes
+    }
 
-5.  **SPACE - FACILITY (Contains / Chứa thiết bị)**
-    *   Một `SPACE` có thể chứa 0 hoặc nhiều `FACILITY` $\rightarrow$ `(0, n)`.
-    *   Một cụm thiết bị cụ thể (`FACILITY`) nằm ở đúng 1 `SPACE` $\rightarrow$ `(1, 1)`.
-
-6.  **SPACE - MAINTENANCE_RECORD (Undergoes / Bảo trì)**
-    *   Một `SPACE` có thể có 0 hoặc nhiều `MAINTENANCE_RECORD` $\rightarrow$ `(0, n)`.
-    *   Một `MAINTENANCE_RECORD` áp dụng cho đúng 1 `SPACE` $\rightarrow$ `(1, 1)`.
-
-7.  **USER - MAINTENANCE_RECORD (Reports / Báo cáo sự cố)**
-    *   Một `USER` có thể báo cáo 0 hoặc nhiều `MAINTENANCE_RECORD` $\rightarrow$ `(0, n)`.
-    *   Một `MAINTENANCE_RECORD` do đúng 1 `USER` báo cáo $\rightarrow$ `(1, 1)`.
-
-8.  **USER - MAINTENANCE_RECORD (Handles / Xử lý bảo trì)**
-    *   Một `USER` (nhân viên) được phân công xử lý 0 hoặc nhiều `MAINTENANCE_RECORD` $\rightarrow$ `(0, n)`.
-    *   Một `MAINTENANCE_RECORD` được giao cho tối đa 1 `USER` xử lý $\rightarrow$ `(0, 1)`.
-
-## 3. ER Diagram (Biểu diễn Sơ đồ)
-![Sơ đồ ERD](erd.png)
+    MAINTENANCE {
+        int MaintenanceID PK
+        string SpaceCode FK
+        string ReporterID FK
+        string AssignedStaffID FK
+        string ProblemDesc
+        datetime StartTime
+        datetime CompletionTime
+        string Status
+        string ResultNote
+    }
+```
