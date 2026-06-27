@@ -93,9 +93,6 @@ The demo Git repository include the following files and folders, your group coul
 │           ├── SKILL.md            
 │           ├── scripts/            
 │           └── references/         
-├── .agent/                         
-│   ├── workflows/
-│   └── skills/
 ├── req/                                  
 │   └── business-requirement.md     
 ├── outputs/                        
@@ -121,7 +118,6 @@ The demo Git repository include the following files and folders, your group coul
 | `.agents/workflows/design-db.md` | Defines the custom command used to run the database design pipeline. |
 | `.agents/skills/db-design-pipeline/SKILL.md` | Defines the agent workflow, rules, design steps, and output requirements. |
 | `.agents/skills/db-design-pipeline/references/` | Stores template references used by the agent to generate consistent outputs. |
-| `.agent/` | Legacy/CLI fallback configuration. |
 | `req/business-requirement.md` | Contains the input business requirement. |
 | `outputs/` | Stores all required phase 1 artifacts for submission. |
 | `AGENT.md` | Required file for submission containing agent documentation. |
