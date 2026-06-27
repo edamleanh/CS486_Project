@@ -36,68 +36,66 @@ Do not skip any file.
 
 Save to: `outputs/01-business-req-analysis-G03.md`
 
-The document must include:
-- Executive Summary
+Analyze the requirements to identify the following. The document must include:
+- Business purpose
 - Actors / Users
-- Key Business Entities
-- Major Business Processes / Use Cases
-- Business Rules & Constraints
-- Assumptions & Unresolved Questions
+- Entities and their attributes
+- Relationships and cardinalities
+- Business rules
 
-# Step 2: Conceptual Design / ERD
+# Step 2: Conceptual Database Design / ERD
 
 Save to: `outputs/02-erd-design-G03.md`
 
-The ERD should be based on the document from Step 1.
-The document must include:
-- Entities & Attributes
-- Relationships & Cardinality
-- A Mermaid.js diagram of the ERD
+Design an ERD showing the main conceptual elements. The document must include:
+- Main entities and attributes
+- Relationships, cardinalities, and participation constraints
+- A Mermaid.js diagram (`erDiagram`) of the ERD
 
 # Step 3: Logical Database Design
 
 Save to: `outputs/03-logical-design-G03.md`
 
-Convert the conceptual ERD into a relational schema.
-The document must include:
-- Tables, Columns, Data Types
-- Primary Keys (PK) and Foreign Keys (FK)
-- Normalization explanations (up to 3NF)
+Convert the ERD into a relational schema. The document must include:
+- Relations (Tables) and their attributes
+- Primary keys and Foreign keys
+- Candidate keys and Key constraints
 
-# Step 4: Design Validation
+# Step 4: Database Design Validation
 
 Save to: `outputs/04-design-validation-G03.md`
 
-The document must include:
-- Cross-referencing tables with business rules
-- Security & Access Control considerations
-- Performance considerations (Indexes)
+The document must evaluate and validate the design. It must include:
+- Evaluation of whether the relational schema correctly represents the ERD.
+- Verification that it satisfies all business rules.
+- Confirmation of the use of appropriate keys, relationships, and constraints.
 
-# Step 5: Database Definition (DDL)
+# Step 5: Database Implementation (DDL)
 
 Save to: `outputs/05-db-definition-G03.sql`
 
 Provide the raw SQL to create the database schema.
 The script must include:
 - `CREATE TABLE` statements with appropriate data types.
-- Primary key and foreign key constraints.
+- Keys (PK, FK), constraints, checks, and default values where appropriate.
 - `DROP TABLE IF EXISTS` statements at the beginning for idempotency.
 
-# Step 6: Sample Data (DML)
+# Step 6: Sample Data Preparation (DML)
 
 Save to: `outputs/06-sample-data-G03.sql`
 
 Provide the raw SQL to insert sample data.
 The script must include:
 - `INSERT INTO` statements for all tables.
-- Sufficient data to properly test all queries in Step 7.
+- Realistic sample data to support testing of normal operations and important exceptional cases.
 
 # Step 7: Query Design (DQL)
 
 Save to: `outputs/07-query-design-G03.sql`
 
-Provide the SQL queries based on the project requirements.
-The script must include:
-- 5 distinct analytical queries.
-- Comments explaining what each query does.
-- Proper use of JOINs, GROUP BY, aggregates, etc.
+Design and execute at least 5 meaningful SQL queries that are valid for the database and useful for answering business questions in the given context.
+For each of the 5 queries, the script must include:
+- Business question
+- Target user(s) that would use the query
+- Short explanation of why the query is useful
+- SQL statement

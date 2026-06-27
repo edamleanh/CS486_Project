@@ -6,6 +6,10 @@ Use the database design pipeline skill in:
 
 `.agents/skills/db-design-pipeline/SKILL.md`
 
+Follow the design guardrails and rules in:
+
+`.agents/rules/db-design-rules.md`
+
 Read the business requirement from:
 
 `$ARGUMENTS`

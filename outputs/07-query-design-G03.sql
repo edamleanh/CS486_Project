@@ -5,7 +5,8 @@
 -- 1. VIEW ALL PENDING BOOKING REQUESTS
 /*
 Business question: What are the current pending booking requests that need approval?
-Explanation: Used by Facility Staff/Managers to review requests that have not yet been approved or rejected.
+Target user(s): Facility Staff, Facility Managers
+Short explanation: Used by Facility Staff/Managers to review requests that have not yet been approved or rejected in order to make approval decisions.
 */
 SELECT 
     B.BookingID,
@@ -30,7 +31,8 @@ ORDER BY
 -- 2. CHECK SPACE AVAILABILITY FOR A SPECIFIC TIME
 /*
 Business question: Which spaces are available for booking on '2026-10-25' between '08:00:00' and '12:00:00' with a capacity of at least 30?
-Explanation: Helps users find available spaces by filtering out spaces that are closed/under maintenance or have overlapping approved bookings.
+Target user(s): Students, Lecturers, Teaching Assistants, Department Administrators
+Short explanation: Helps users find available spaces by filtering out spaces that are closed/under maintenance or have overlapping approved bookings.
 */
 SELECT 
     S.SpaceCode, 
@@ -51,7 +53,8 @@ WHERE
 -- 3. LIST ALL FACILITIES IN A SPECIFIC SPACE
 /*
 Business question: What equipment/facilities are available in 'Auditorium A1' (SpaceCode 'A1-101')?
-Explanation: Allows requesters to see what equipment exists in a room before booking.
+Target user(s): Students, Lecturers, Any Requester
+Short explanation: Allows requesters to see what equipment exists in a room before booking to ensure it meets their needs.
 */
 SELECT 
     F.FacilityName, 
@@ -67,7 +70,8 @@ WHERE
 -- 4. VIEW ACTIVE MAINTENANCE ISSUES
 /*
 Business question: Which spaces are currently facing maintenance issues that are not yet completed?
-Explanation: Facility managers use this to track outstanding repairs and coordinate maintenance staff.
+Target user(s): Facility Managers, Facility Staff
+Short explanation: Facility managers use this to track outstanding repairs and coordinate maintenance staff to resolve issues quickly.
 */
 SELECT 
     M.MaintenanceID,
@@ -90,7 +94,8 @@ ORDER BY
 -- 5. USER BOOKING HISTORY
 /*
 Business question: What is the booking history of student 'SV001'?
-Explanation: Allows an individual user to check the statuses of all their past and upcoming booking requests.
+Target user(s): Students (e.g., SV001)
+Short explanation: Allows an individual user to check the statuses of all their past and upcoming booking requests for their own records.
 */
 SELECT 
     B.BookingID,
