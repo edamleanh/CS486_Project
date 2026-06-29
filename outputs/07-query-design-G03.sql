@@ -113,3 +113,44 @@ WHERE
     B.RequesterID = 'SV001'
 ORDER BY 
     B.ReqStartTime DESC;
+
+-- 6. LIST ALL BOOKINGS THAT ARE CHECKED IN BY A STAFF IN A TIME INTERVAL
+/*
+ * Business question: What are the bookings checked in by 'ST001' between 2026-06-21 and 2026-06-27?
+ * Target user(s): Staff
+ */
+SELECT *
+FROM Bookings b 
+WHERE b.CheckInStaffID = 'ST001'
+    AND b.ActualStartTime >= '2026-06-21' AND b.ActualStartTime <= '2026-06-27'
+ORDER BY b.ActualStartTime DESC;
+
+-- 7. CHECK BOOKING HISTORY OF A SPACE
+/*
+ * Business question: What is the booking history of space 'A1-101'?
+ */
+SELECT
+    b.BookingID,
+    s.SpaceName,
+    b.ReqStartTime,
+    b.ReqEndTime,
+    b.Status,
+    b.RejReason,
+    b.DecisionTime
+FROM Spaces s JOIN Bookings b ON s.SpaceCode = b.SpaceCode 
+WHERE s.SpaceCode = 'A1-101'
+ORDER BY b.ReqStartTime DESC;
+
+-- 8. LIST SPACES BOOKED BY STUDENTS IN EACH DEPARTMENT
+/*
+ *  Target user(s): Student, Department
+ */
+SELECT u.Department,
+    b.BookingID,
+    s.SpaceCode,
+    s.SpaceName,
+    s.SpaceType
+FROM Users u 
+    JOIN Bookings b ON u.UserID = b.RequesterID
+    JOIN Spaces s ON b.SpaceCode = s.SpaceCode
+ORDER BY u.Department;
