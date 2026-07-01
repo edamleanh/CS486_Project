@@ -145,7 +145,8 @@ ORDER BY b.ReqStartTime DESC;
 /*
  *  Target user(s): Student, Department
  */
-SELECT u.Department,
+SELECT
+    u.Department,
     b.BookingID,
     s.SpaceCode,
     s.SpaceName,
@@ -154,3 +155,34 @@ FROM Users u
     JOIN Bookings b ON u.UserID = b.RequesterID
     JOIN Spaces s ON b.SpaceCode = s.SpaceCode
 ORDER BY u.Department;
+
+-- 9. FIND THE MOST COMMON ROLE OF MAINTENANCE ISSUE REPORTERS
+SELECT u.[Role]
+FROM Users u 
+WHERE u.[Role] = (SELECT [Role]
+    FROM (
+        SELECT TOP 1 u2.[Role], COUNT(*) AS role_cnt
+        FROM Users u2 
+            JOIN Maintenance_Records mr ON u2.UserID = mr.ReporterID
+        GROUP BY u2.[Role]) AS MrNumRole);
+
+-- 10. FIND THE SPACES THAT ARE BROKEN THE MOST
+SELECT
+    s.SpaceCode,
+    s.SpaceName,
+    s.SpaceType 
+FROM Spaces s 
+GROUP BY
+    s.SpaceCode,
+    s.SpaceName,
+    s.SpaceType
+HAVING
+    (SELECT COUNT(*)
+    FROM Spaces s2
+        JOIN Maintenance_Records mr ON s2.SpaceCode = mr.SpaceCode 
+    WHERE s.SpaceCode = s2.SpaceCode)
+    =
+    (SELECT TOP 1 COUNT(*)
+    FROM Spaces s2 
+        JOIN Maintenance_Records mr ON s2.SpaceCode = mr.SpaceCode 
+    GROUP BY s2.SpaceCode);
