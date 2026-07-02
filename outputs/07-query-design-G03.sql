@@ -114,6 +114,7 @@ WHERE
 ORDER BY 
     B.ReqStartTime DESC;
 
+
 -- 6. LIST ALL BOOKINGS THAT ARE CHECKED IN BY A STAFF IN A TIME INTERVAL
 /*
  * Business question: What are the bookings checked in by 'ST001' between 2026-06-21 and 2026-06-27?
@@ -186,3 +187,109 @@ HAVING
     FROM Spaces s2 
         JOIN Maintenance_Records mr ON s2.SpaceCode = mr.SpaceCode 
     GROUP BY s2.SpaceCode);
+    
+    
+-- QUERY 11: MOST FREQUENTLY BOOKED SPACES
+/*
+Business question: What are the most frequently used spaces based on the number of approved and completed bookings?
+Target user(s): Facility Manager, Department Administrator
+Short explanation: Helps management sees if more similar spaces are needed or if underutilized spaces should be repurposed.
+*/
+SELECT TOP 5
+    S.SpaceCode,
+    S.SpaceName,
+    COUNT(B.BookingID) AS TotalBookings
+FROM 
+    Spaces S
+JOIN 
+    Bookings B ON S.SpaceCode = B.SpaceCode 
+WHERE 
+    B.Status IN ('Approved', 'Completed', 'Checked In')
+GROUP BY 
+    S.SpaceCode, 
+    S.SpaceName
+ORDER BY 
+    TotalBookings DESC;
+
+
+-- QUERY 12: USERS WITH HIGH NO-SHOW RATES
+/*
+Business question: Which users have the highest number of times of not showing up after booking?
+Target user(s): Facility Manager, Department Administrator
+Short explanation: Finds users who frequently book spaces but fail to show up, allowing management to issue warnings and so on.
+*/
+
+
+
+-- QUERY 13: AVAILABLE SPACES WITH A SPECIFIC FACILITY
+/*
+Business question: Which currently available spaces are equipped with a 'Projector', and what is their seating capacity?
+Target user(s): Facility Staff, Event Organizers
+Short explanation: Helps in organizing events that strictly require a specific facility (like a projector) by finding all available spaces with that equipment and aggregating their capacity.
+*/
+SELECT 
+    S.SpaceCode,
+    S.SpaceName,
+    S.Capacity,
+    SF.Quantity AS ProjectorCount
+FROM 
+    Spaces S
+JOIN 
+    Space_Facilities SF ON S.SpaceCode = SF.SpaceCode
+JOIN 
+    Facilities F ON SF.FacilityID = F.FacilityID
+WHERE 
+    F.FacilityName = 'Projector'
+    AND S.CurrentStatus = 'Available'
+ORDER BY 
+    S.Capacity DESC;
+
+
+-- QUERY 14: AVERAGE MAINTENANCE RESOLUTION TIME
+/*
+Business question: What is the average time taken (in hours) to resolve maintenance issues for each space?
+Target user(s): Facility Manager
+Short explanation: Allows the manager to evaluate the efficiency of the maintenance team and identify spaces that suffer from prolonged maintenance downtimes.
+*/
+SELECT 
+    S.SpaceCode,
+    S.SpaceName,
+    COUNT(M.MaintenanceID) AS TotalResolvedIssues,
+    AVG(DATEDIFF(HOUR, M.StartTime, M.CompletionTime)) AS AvgResolutionTimeHours
+FROM 
+    Maintenance_Records M
+JOIN 
+    Spaces S ON M.SpaceCode = S.SpaceCode
+WHERE 
+    M.Status = 'Completed'
+GROUP BY 
+    S.SpaceCode, 
+    S.SpaceName;
+
+
+-- QUERY 15: AUDIT OVERLAPPING APPROVED BOOKINGS
+/*
+Business question: Are there any approved bookings that overlap in time for the same space? (Data anomaly check)
+Target user(s): System Administrator, Facility Manager
+Short explanation: Acts as an audit query to ensure the system correctly prevents double bookings. It identifies any instances where two approved bookings exist for the same space at overlapping times.
+*/
+SELECT 
+    B1.BookingID AS Booking1,
+    B2.BookingID AS Booking2,
+    B1.SpaceCode,
+    B1.ReqStartTime AS B1_Start,
+    B1.ReqEndTime AS B1_End,
+    B2.ReqStartTime AS B2_Start,
+    B2.ReqEndTime AS B2_End
+FROM 
+    Bookings B1
+JOIN 
+    Bookings B2 ON B1.SpaceCode = B2.SpaceCode
+        AND B1.BookingID < B2.BookingID
+WHERE 
+    B1.Status IN ('Approved', 'Completed', 'Checked In')
+    AND B2.Status IN ('Approved', 'Completed', 'Checked In')
+    AND B1.ReqStartTime < B2.ReqEndTime 
+    AND B1.ReqEndTime > B2.ReqStartTime;
+    
+    
