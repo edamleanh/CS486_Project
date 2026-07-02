@@ -293,3 +293,138 @@ WHERE
     AND B1.ReqEndTime > B2.ReqStartTime;
     
     
+
+
+-- ======================================================================
+-- QUERY DESIGN (DQL) SCRIPT - GROUP 03 (Tiếp theo: Query 16 - 20)
+-- ======================================================================
+
+-- 16. NO-SHOW BOOKINGS REPORT
+/*
+Business question: Danh sách tất cả các booking bị đánh dấu là No-Show trong hệ thống, kèm thông tin người đặt và không gian?
+Target user(s): Facility Managers, Department Administrators
+Short explanation: Giúp ban quản lý theo dõi người dùng hay vắng mặt, từ đó có chính sách nhắc nhở hoặc hạn chế đặt chỗ đối với những trường hợp tái phạm nhiều lần. Đây là một trong những business rule quan trọng cần giám sát.
+*/
+SELECT 
+    B.BookingID,
+    S.SpaceName,
+    U.FullName AS RequesterName,
+    U.Role AS RequesterRole,
+    B.ReqStartTime,
+    B.ReqEndTime,
+    B.Purpose,
+    B.Participants
+FROM 
+    Bookings B
+JOIN 
+    Spaces S ON B.SpaceCode = S.SpaceCode
+JOIN 
+    Users U ON B.RequesterID = U.UserID
+WHERE 
+    B.Status = 'No-Show'
+ORDER BY 
+    B.ReqStartTime DESC;
+
+
+-- 17. UPCOMING APPROVED BOOKINGS (Next 7 Days)
+/*
+Business question: Những booking nào đã được duyệt và sẽ diễn ra trong 7 ngày tới?
+Target user(s): Facility Staff, Facility Managers
+Short explanation: Cho phép nhân viên cơ sở vật chất chuẩn bị trước (kiểm tra thiết bị, vệ sinh, sắp xếp check-in) cho các buổi sắp diễn ra, giảm thiểu tình trạng không chuẩn bị kịp.
+*/
+SELECT 
+    B.BookingID,
+    S.SpaceName,
+    U.FullName AS RequesterName,
+    B.ReqStartTime,
+    B.ReqEndTime,
+    B.Purpose,
+    B.Participants,
+    B.Status
+FROM 
+    Bookings B
+JOIN 
+    Spaces S ON B.SpaceCode = S.SpaceCode
+JOIN 
+    Users U ON B.RequesterID = U.UserID
+WHERE 
+    B.Status = 'Approved'
+    AND B.ReqStartTime BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+ORDER BY 
+    B.ReqStartTime ASC;
+
+
+-- 18. BOOKING PURPOSE ANALYSIS (Nhu cầu sử dụng theo mục đích)
+/*
+Business question: Mục đích sử dụng không gian nào phổ biến nhất và trung bình số người tham gia là bao nhiêu?
+Target user(s): Facility Managers, Department Administrators
+Short explanation: Giúp ban lãnh đạo hiểu rõ nhu cầu thực tế (lecture, examination, workshop, seminar...) để có kế hoạch mua sắm thiết bị, phân bổ không gian và nhân sự phù hợp hơn.
+*/
+SELECT 
+    B.Purpose,
+    COUNT(B.BookingID) AS TotalBookings,
+    ROUND(AVG(B.Participants), 1) AS AvgParticipants,
+    MIN(B.Participants) AS MinParticipants,
+    MAX(B.Participants) AS MaxParticipants
+FROM 
+    Bookings B
+WHERE 
+    B.Status IN ('Approved', 'Checked In', 'Completed')
+GROUP BY 
+    B.Purpose
+ORDER BY 
+    TotalBookings DESC;
+
+
+-- 19. SPACES WITH MOST MAINTENANCE ISSUES
+/*
+Business question: Những không gian nào đang gặp nhiều vấn đề bảo trì nhất?
+Target user(s): Facility Managers
+Short explanation: Giúp quản lý xác định các không gian "yếu" cần được ưu tiên bảo trì, nâng cấp hoặc kiểm tra định kỳ để giảm thiểu ảnh hưởng đến hoạt động giảng dạy và sự kiện.
+*/
+SELECT 
+    S.SpaceCode,
+    S.SpaceName,
+    S.SpaceType,
+    COUNT(M.MaintenanceID) AS TotalMaintenanceRecords,
+    MAX(M.StartTime) AS LastMaintenanceDate,
+    SUM(CASE WHEN M.Status != 'Completed' THEN 1 ELSE 0 END) AS OpenIssues
+FROM 
+    Spaces S
+LEFT JOIN 
+    Maintenance_Records M ON S.SpaceCode = M.SpaceCode
+GROUP BY 
+    S.SpaceCode, S.SpaceName, S.SpaceType
+HAVING 
+    COUNT(M.MaintenanceID) > 0
+ORDER BY 
+    TotalMaintenanceRecords DESC;
+
+
+-- 20. LONG PENDING BOOKINGS (Backlog Detection)
+/*
+Business question: Những yêu cầu đặt chỗ nào đang ở trạng thái Pending quá lâu (hơn 3 ngày)?
+Target user(s): Facility Managers, Facility Staff
+Short explanation: Phát hiện các yêu cầu bị "treo" quá lâu để nhân viên xử lý kịp thời, tránh làm mất lòng người dùng và đảm bảo quy trình duyệt diễn ra nhanh chóng.
+*/
+SELECT 
+    B.BookingID,
+    S.SpaceName,
+    U.FullName AS RequesterName,
+    U.Role,
+    B.ReqStartTime,
+    B.ReqEndTime,
+    B.Purpose,
+    DATEDIFF(CURDATE(), B.DecisionTime) AS DaysPending
+FROM 
+    Bookings B
+JOIN 
+    Spaces S ON B.SpaceCode = S.SpaceCode
+JOIN 
+    Users U ON B.RequesterID = U.UserID
+WHERE 
+    B.Status = 'Pending'
+    AND B.DecisionTime IS NOT NULL
+    AND DATEDIFF(CURDATE(), B.DecisionTime) > 3
+ORDER BY 
+    DaysPending DESC;
