@@ -218,9 +218,25 @@ Business question: Which users have the highest number of times of not showing u
 Target user(s): Facility Manager, Department Administrator
 Short explanation: Finds users who frequently book spaces but fail to show up, allowing management to issue warnings and so on.
 */
-
-
-
+SELECT 
+    U.UserID,
+    U.FullName,
+    U.Role,
+    U.Department,
+    COUNT(B.BookingID) AS NoShowCount
+FROM 
+    Users U
+JOIN 
+    Bookings B ON U.UserID = B.RequesterID
+WHERE 
+    B.Status = 'No-Show'
+GROUP BY 
+    U.UserID, 
+    U.FullName, 
+    U.Role, 
+    U.Department
+ORDER BY 
+    NoShowCount DESC;
 -- QUERY 13: AVAILABLE SPACES WITH A SPECIFIC FACILITY
 /*
 Business question: Which currently available spaces are equipped with a 'Projector', and what is their seating capacity?
