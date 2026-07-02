@@ -115,6 +115,80 @@ ORDER BY
     B.ReqStartTime DESC;
 
 
+-- 6. LIST ALL BOOKINGS THAT ARE CHECKED IN BY A STAFF IN A TIME INTERVAL
+/*
+ * Business question: What are the bookings checked in by 'ST001' between 2026-06-21 and 2026-06-27?
+ * Target user(s): Staff
+ */
+SELECT *
+FROM Bookings b 
+WHERE b.CheckInStaffID = 'ST001'
+    AND b.ActualStartTime >= '2026-06-21' AND b.ActualStartTime <= '2026-06-27'
+ORDER BY b.ActualStartTime DESC;
+
+-- 7. CHECK BOOKING HISTORY OF A SPACE
+/*
+ * Business question: What is the booking history of space 'A1-101'?
+ */
+SELECT
+    b.BookingID,
+    s.SpaceName,
+    b.ReqStartTime,
+    b.ReqEndTime,
+    b.Status,
+    b.RejReason,
+    b.DecisionTime
+FROM Spaces s JOIN Bookings b ON s.SpaceCode = b.SpaceCode 
+WHERE s.SpaceCode = 'A1-101'
+ORDER BY b.ReqStartTime DESC;
+
+-- 8. LIST SPACES BOOKED BY STUDENTS IN EACH DEPARTMENT
+/*
+ *  Target user(s): Student, Department
+ */
+SELECT
+    u.Department,
+    b.BookingID,
+    s.SpaceCode,
+    s.SpaceName,
+    s.SpaceType
+FROM Users u 
+    JOIN Bookings b ON u.UserID = b.RequesterID
+    JOIN Spaces s ON b.SpaceCode = s.SpaceCode
+ORDER BY u.Department;
+
+-- 9. FIND THE MOST COMMON ROLE OF MAINTENANCE ISSUE REPORTERS
+SELECT u.[Role]
+FROM Users u 
+WHERE u.[Role] = (SELECT [Role]
+    FROM (
+        SELECT TOP 1 u2.[Role], COUNT(*) AS role_cnt
+        FROM Users u2 
+            JOIN Maintenance_Records mr ON u2.UserID = mr.ReporterID
+        GROUP BY u2.[Role]) AS MrNumRole);
+
+-- 10. FIND THE SPACES THAT ARE BROKEN THE MOST
+SELECT
+    s.SpaceCode,
+    s.SpaceName,
+    s.SpaceType 
+FROM Spaces s 
+GROUP BY
+    s.SpaceCode,
+    s.SpaceName,
+    s.SpaceType
+HAVING
+    (SELECT COUNT(*)
+    FROM Spaces s2
+        JOIN Maintenance_Records mr ON s2.SpaceCode = mr.SpaceCode 
+    WHERE s.SpaceCode = s2.SpaceCode)
+    =
+    (SELECT TOP 1 COUNT(*)
+    FROM Spaces s2 
+        JOIN Maintenance_Records mr ON s2.SpaceCode = mr.SpaceCode 
+    GROUP BY s2.SpaceCode);
+    
+    
 -- QUERY 11: MOST FREQUENTLY BOOKED SPACES
 /*
 Business question: What are the most frequently used spaces based on the number of approved and completed bookings?
@@ -217,3 +291,5 @@ WHERE
     AND B2.Status IN ('Approved', 'Completed', 'Checked In')
     AND B1.ReqStartTime < B2.ReqEndTime 
     AND B1.ReqEndTime > B2.ReqStartTime;
+    
+    
